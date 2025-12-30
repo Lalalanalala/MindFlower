@@ -63,7 +63,6 @@ export function TaskInput({ onAnalyzed }: TaskInputProps) {
 
     // 如果有具体时间，自动创建闹钟（提前10分钟提醒）
     if (preview.date && preview.time) {
-      const [hours, minutes] = preview.time.split(':').map(Number);
       // 使用 ISO 格式创建日期，避免时区问题
       const alarmDate = new Date(preview.date + 'T' + preview.time + ':00');
 

@@ -14,7 +14,6 @@ export function PomodoroTimer() {
   const intervalRef = useRef<number | null>(null);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
-  const selectedStep = selectedTask?.steps.find((s) => s.id === selectedStepId);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {

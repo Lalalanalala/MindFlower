@@ -5,7 +5,6 @@ import { useTaskStore } from '../stores/taskStore';
 export function AlarmList() {
   const alarms = useAlarmStore((state) => state.alarms);
   const addAlarm = useAlarmStore((state) => state.addAlarm);
-  const updateAlarm = useAlarmStore((state) => state.updateAlarm);
   const deleteAlarm = useAlarmStore((state) => state.deleteAlarm);
   const toggleAlarm = useAlarmStore((state) => state.toggleAlarm);
   const tasks = useTaskStore((state) => state.tasks);

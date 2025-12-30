@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 export type Page = 'home' | 'tasks' | 'pomodoro' | 'alarms' | 'calendar' | 'quadrant';
 
 interface BottomNavProps {

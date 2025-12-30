@@ -23,7 +23,7 @@ const priorityColors = {
 
 export function TaskCard({ task }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const { updateTask, deleteTask, updateStep } = useTaskStore();
+  const { deleteTask, updateStep } = useTaskStore();
   const alarms = useAlarmStore((state) => state.alarms);
   
   // 查找关联的闹钟

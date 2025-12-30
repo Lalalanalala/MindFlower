@@ -17,7 +17,6 @@ export interface ParsedDateTime {
 export function parseDateTime(input: string): ParsedDateTime {
   // 获取当前真实日期（使用本地时区）
   const now = new Date();
-  const day = now.getDay(); // 0 = 周日, 1 = 周一, ..., 6 = 周六
 
   let result: ParsedDateTime = {
     title: input.trim(),
@@ -74,14 +73,6 @@ export function parseDateTime(input: string): ParsedDateTime {
 
   // 时间解析
   // 匹配 "9点"、"9:10"、"9:30"、"09:00"、"上午10点"、"下午3点"、"晚上8点"等
-  const timePatterns = [
-    /(上午|早上|早晨|凌晨)(\d{1,2})[点时点：]/g,
-    /(下午|傍晚|晚上|夜里|深夜)(\d{1,2})[点时点：]/g,
-    /(\d{1,2}):(\d{2})/g, // "9:10", "09:30"
-    /(\d{1,2})点(\d{1,2})分?/g, // "9点10分", "9点10"
-    /(\d{1,2})点/g, // "9点", "10点"
-  ];
-
   let foundTime = false;
 
   // 匹配 "上午10点"、"下午3点" 等

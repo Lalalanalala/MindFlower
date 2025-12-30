@@ -10,12 +10,16 @@ export const notify = {
 
   async send(title: string, body: string, options?: { vibrate?: boolean }) {
     if (Notification.permission === 'granted') {
-      new Notification(title, {
+      const notificationOptions: NotificationOptions = {
         body,
         icon: '/icon-192.png',
-        vibrate: options?.vibrate ? [200, 100, 200] : undefined,
         requireInteraction: true
-      });
+      };
+      // vibrate 是 NotificationOptions 的扩展属性，需要进行类型断言
+      if (options?.vibrate) {
+        (notificationOptions as any).vibrate = [200, 100, 200];
+      }
+      new Notification(title, notificationOptions);
     }
   },
 

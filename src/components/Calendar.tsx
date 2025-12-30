@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useTaskStore } from '../stores/taskStore';
-import type { Task } from '../types';
 import { CalendarDetailModal } from './CalendarDetailModal';
 
 type CalendarView = 'day' | 'week' | 'month' | 'year';
