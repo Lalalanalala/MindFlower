@@ -1,150 +1,193 @@
-import {
-  getLocalToday,
-  getTomorrow,
-  getDateAfterDays,
-  getNextWeekday,
-} from './timeUtils';
+import { formatDate } from './timeUtils';
 
 export interface ParsedDateTime {
   date?: string; // "YYYY-MM-DD" 格式
   time?: string; // "HH:mm" 格式
   title: string; // 去掉日期时间后的标题
+  hasDate: boolean;
+  hasTime: boolean;
 }
 
 /**
  * 解析中文日期时间表达
  */
 export function parseDateTime(input: string): ParsedDateTime {
-  // 获取当前真实日期（使用本地时区）
+  let date: string | undefined;
+  let time: string | undefined;
+  let remainingText = input;
+
   const now = new Date();
+  const currentYear = now.getFullYear();
 
-  let result: ParsedDateTime = {
-    title: input.trim(),
-  };
-
-  // 星期解析映射
-  const weekdayMap: Record<string, number> = {
-    一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 日: 0, 天: 0,
-  };
-
-  let foundDate = false;
-
-  // 查找日期关键词
-  if (/今天|今日/g.test(input)) {
-    result.date = getLocalToday();
-    foundDate = true;
-    input = input.replace(/今天|今日/g, '').trim();
-  } else if (/明天|明日/g.test(input)) {
-    result.date = getTomorrow();
-    foundDate = true;
-    input = input.replace(/明天|明日/g, '').trim();
-  } else if (/后天|后日/g.test(input)) {
-    result.date = getDateAfterDays(2);
-    foundDate = true;
-    input = input.replace(/后天|后日/g, '').trim();
-  } else if (/大后天/g.test(input)) {
-    result.date = getDateAfterDays(3);
-    foundDate = true;
-    input = input.replace(/大后天/g, '').trim();
+  // 1. 匹配完整日期：2026年1月3日 或 2026年01月03日
+  const fullDateRegex = /(\d{4})年(\d{1,2})月(\d{1,2})[日号]/;
+  const fullDateMatch = remainingText.match(fullDateRegex);
+  if (fullDateMatch) {
+    const year = parseInt(fullDateMatch[1]);
+    const month = String(parseInt(fullDateMatch[2])).padStart(2, '0');
+    const day = String(parseInt(fullDateMatch[3])).padStart(2, '0');
+    date = `${year}-${month}-${day}`;
+    remainingText = remainingText.replace(fullDateRegex, '');
   }
 
-  // 查找"下周一"、"下周二"等
-  const nextWeekPattern = /下周([一二三四五六日天])/;
-  const nextWeekMatch = input.match(nextWeekPattern);
-  if (nextWeekMatch && !foundDate) {
-    const targetWeekday = weekdayMap[nextWeekMatch[1]];
-    result.date = getNextWeekday(targetWeekday);
-    foundDate = true;
-    input = input.replace(nextWeekPattern, '').trim();
-  }
-
-  // 查找"周一"、"周二"等（本周）
-  const thisWeekPattern = /([今这])周([一二三四五六日天])/;
-  const thisWeekMatch = input.match(thisWeekPattern);
-  if (thisWeekMatch && !foundDate) {
-    const targetWeekday = weekdayMap[thisWeekMatch[2]];
-    const currentDay = now.getDay();
-    const daysUntilWeekday = (targetWeekday - currentDay + 7) % 7;
-    const daysOffset = daysUntilWeekday === 0 ? 0 : daysUntilWeekday;
-    result.date = getDateAfterDays(daysOffset);
-    foundDate = true;
-    input = input.replace(thisWeekPattern, '').trim();
-  }
-
-  // 时间解析
-  // 匹配 "9点"、"9:10"、"9:30"、"09:00"、"上午10点"、"下午3点"、"晚上8点"等
-  let foundTime = false;
-
-  // 匹配 "上午10点"、"下午3点" 等
-  let match = input.match(/(上午|早上|早晨|凌晨)(\d{1,2})[点时点：]/);
-  if (match) {
-    let hour = parseInt(match[2]);
-    if (hour === 12) hour = 0;
-    result.time = `${String(hour).padStart(2, '0')}:00`;
-    foundTime = true;
-    input = input.replace(match[0], '').trim();
-  }
-
-  if (!foundTime) {
-    match = input.match(/(下午|傍晚|晚上|夜里|深夜)(\d{1,2})[点时点：]/);
-    if (match) {
-      let hour = parseInt(match[2]);
-      if (hour < 12) hour += 12;
-      if (hour === 24) hour = 0;
-      result.time = `${String(hour).padStart(2, '0')}:00`;
-      foundTime = true;
-      input = input.replace(match[0], '').trim();
+  // 2. 匹配短日期：1月3日 或 1月3号（必须在完整日期之后匹配，避免重复）
+  if (!date) {
+    const shortDateRegex = /(\d{1,2})月(\d{1,2})[日号]/;
+    const shortDateMatch = remainingText.match(shortDateRegex);
+    if (shortDateMatch) {
+      const month = parseInt(shortDateMatch[1]);
+      const day = parseInt(shortDateMatch[2]);
+      let year = currentYear;
+      
+      // 如果日期已过，使用明年
+      const targetDate = new Date(year, month - 1, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      targetDate.setHours(0, 0, 0, 0);
+      if (targetDate < today) {
+        year = currentYear + 1;
+      }
+      
+      date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      remainingText = remainingText.replace(shortDateRegex, '');
     }
   }
 
-  // 匹配 "9:10"、"09:30" 等
-  if (!foundTime) {
-    match = input.match(/(\d{1,2}):(\d{2})/);
-    if (match) {
-      let hour = parseInt(match[1]);
-      const minute = match[2];
-      result.time = `${String(hour).padStart(2, '0')}:${minute}`;
-      foundTime = true;
-      input = input.replace(match[0], '').trim();
+  // 3. 匹配相对日期：今天、明天、后天、大后天
+  if (!date) {
+    const relativeDays: { [key: string]: number } = {
+      '今天': 0,
+      '今日': 0,
+      '明天': 1,
+      '明日': 1,
+      '后天': 2,
+      '后日': 2,
+      '大后天': 3,
+    };
+    
+    for (const [keyword, daysToAdd] of Object.entries(relativeDays)) {
+      if (remainingText.includes(keyword)) {
+        const targetDate = new Date(now.getTime());
+        targetDate.setDate(now.getDate() + daysToAdd);
+        date = formatDate(targetDate);
+        remainingText = remainingText.replace(keyword, '');
+        break;
+      }
     }
   }
 
-  // 匹配 "9点10分"、"9点10" 等
-  if (!foundTime) {
-    match = input.match(/(\d{1,2})点(\d{1,2})分?/);
-    if (match) {
-      const hour = parseInt(match[1]);
-      const minute = match[2];
-      result.time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-      foundTime = true;
-      input = input.replace(match[0], '').trim();
+  // 4. 匹配周几：周六、周日、星期一、下周六
+  if (!date) {
+    const weekdayMap: { [key: string]: number } = {
+      '日': 0, '天': 0,
+      '一': 1,
+      '二': 2,
+      '三': 3,
+      '四': 4,
+      '五': 5,
+      '六': 6,
+    };
+
+    // 下周X 或 下个周X
+    const nextWeekRegex = /下(?:个)?(?:周|星期)([日天一二三四五六])/;
+    const nextWeekMatch = remainingText.match(nextWeekRegex);
+    if (nextWeekMatch) {
+      const targetDay = weekdayMap[nextWeekMatch[1]];
+      const currentDay = now.getDay();
+      let diff = targetDay - currentDay;
+      if (diff <= 0) diff += 7; // 如果已过，指下周
+      const targetDate = new Date(now.getTime());
+      targetDate.setDate(now.getDate() + diff);
+      date = formatDate(targetDate);
+      remainingText = remainingText.replace(nextWeekRegex, '');
+    }
+
+    // 这周X 或 周X 或 星期X
+    if (!date) {
+      const thisWeekRegex = /(?:这(?:个)?)?(?:周|星期)([日天一二三四五六])/;
+      const thisWeekMatch = remainingText.match(thisWeekRegex);
+      if (thisWeekMatch) {
+        const targetDay = weekdayMap[thisWeekMatch[1]];
+        const currentDay = now.getDay();
+        let diff = targetDay - currentDay;
+        if (diff < 0) diff += 7; // 如果已过，指下一个
+        const targetDate = new Date(now.getTime());
+        targetDate.setDate(now.getDate() + diff);
+        date = formatDate(targetDate);
+        remainingText = remainingText.replace(thisWeekRegex, '');
+      } else {
+        // 单独匹配"周六"、"周日"等（匹配"周X"或"星期X"格式）
+        const standaloneWeekdayRegex = /(?:周|星期)([日天一二三四五六])/;
+        const standaloneMatch = remainingText.match(standaloneWeekdayRegex);
+        if (standaloneMatch && standaloneMatch[1]) {
+          const targetDay = weekdayMap[standaloneMatch[1]];
+          if (targetDay !== undefined) {
+            const currentDay = now.getDay();
+            let diff = targetDay - currentDay;
+            if (diff < 0) diff += 7; // 如果已过，指下一个
+            const targetDate = new Date(now.getTime());
+            targetDate.setDate(now.getDate() + diff);
+            date = formatDate(targetDate);
+            remainingText = remainingText.replace(standaloneWeekdayRegex, '');
+          }
+        }
+      }
     }
   }
 
-  // 匹配 "9点"、"10点" 等（只有小时）
-  if (!foundTime) {
-    match = input.match(/(\d{1,2})点/);
-    if (match) {
-      const hour = parseInt(match[1]);
-      // 如果是下午的时间范围，可能需要加12（但这里默认为上午）
-      // 可以通过上下文判断，这里简化处理为24小时制
-      result.time = `${String(hour).padStart(2, '0')}:00`;
-      foundTime = true;
-      input = input.replace(match[0], '').trim();
+  // 5. 匹配时间：9点、9:30、上午10点、下午3点
+  const timePatterns = [
+    { regex: /上午(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 0 },
+    { regex: /早上(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 0 },
+    { regex: /早晨(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 0 },
+    { regex: /凌晨(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 0 },
+    { regex: /下午(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 12 },
+    { regex: /傍晚(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 12 },
+    { regex: /晚上(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 12 },
+    { regex: /夜里(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 12 },
+    { regex: /深夜(\d{1,2})(?::(\d{2}))?(?:点|时)?/, offset: 12 },
+    { regex: /(\d{1,2}):(\d{2})/, offset: 0 },
+    { regex: /(\d{1,2})点(\d{1,2})分?/, offset: 0 },
+    { regex: /(\d{1,2})点/, offset: 0 },
+  ];
+
+  for (const { regex, offset } of timePatterns) {
+    const timeMatch = remainingText.match(regex);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1]);
+      const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+      
+      if (offset > 0 && hours < 12) {
+        hours += offset;
+      }
+      if (hours === 24) hours = 0;
+      
+      time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      remainingText = remainingText.replace(regex, '');
+      break;
     }
   }
 
-  // 清理标题，移除多余的空白和标点
-  result.title = input
+  // 6. 如果有日期但没时间，默认设置为 9:00
+  if (date && !time) {
+    time = '09:00';
+  }
+
+  // 清理标题
+  remainingText = remainingText
+    .replace(/提醒我?/g, '')
+    .replace(/记得/g, '')
+    .replace(/要/g, '')
     .replace(/[，,。.！!？?；;：:]/g, '')
     .trim();
 
-  // 如果标题为空，使用原输入
-  if (!result.title) {
-    result.title = input.trim() || '未命名任务';
-  }
-
-  return result;
+  return {
+    date,
+    time,
+    title: remainingText || input,
+    hasDate: !!date,
+    hasTime: !!time,
+  };
 }
 
 /**
@@ -175,4 +218,3 @@ export function getDateDisplayText(dateStr: string): string {
   
   return dateStr;
 }
-
