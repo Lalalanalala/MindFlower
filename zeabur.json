@@ -1,0 +1,6 @@
+{
+  "build_command": "npm run build",
+  "output_dir": "dist",
+  "start_command": "npx serve dist -l 8080"
+}
+
