@@ -12,13 +12,27 @@ export default defineConfig({
         name: 'MindFlower',
         short_name: 'MindFlower',
         description: '一句话输入，AI自动拆解任务，番茄钟，提醒闹钟',
-        theme_color: '#38BDF8',
+        theme_color: '#7DD3FC',
         background_color: '#E0F7FA',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
         ]
       }
     })
